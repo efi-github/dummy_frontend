@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>D3 Drag and Zoom Example</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    /* Add your CSS here */
+    #main-container {
+  display: flex;
+  flex-direction: row;
+}
+#canvas {
+  flex: 1;
+}
+.tooltip {
+  position: absolute;
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px;
+  display: none;
+}
+#lineList {
+  width: 200px;
+  overflow-y: auto;
+  max-height: 400px;
+  border-left: 1px solid #ccc;
+  padding-left: 10px;
+}
+.list-item {
+  margin-bottom: 10px;
+}
+
+  </style>
+</head>
+<body>
+<div id="main-container">
+    <!-- Your existing SVG element for D3 -->
+  <svg id="canvas" width="400" height="800">
+    <g id="container">
+      <!-- Your SVG content will be appended here -->
+    </g>
+  </svg>
+
+    <!-- Div for the list -->
+    <div id="lineList"></div>
+</div>
+<script src = app.js ></script>
+</body>
+</html>
