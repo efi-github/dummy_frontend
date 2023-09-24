@@ -80,6 +80,14 @@ function assignColors(codes, hueOffset=0, saturation=100, value=100, depth=0, hu
   }
 }
 
+function arrayRemove(arr, value) {
+
+    return arr.filter(function (geeks) {
+        return geeks != value;
+    });
+
+}
+
 function newColorScale(code_id) {
     return idToColorMap[code_id] || "#808080"; // Fallback to gray
   }
@@ -89,5 +97,6 @@ function newColorScale(code_id) {
   findCodePath,
   idToColorMap,
   assignColors,
-  newColorScale
+  newColorScale,
+    arrayRemove
 };

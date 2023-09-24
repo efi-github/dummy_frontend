@@ -5,12 +5,34 @@ import utilities from "./utilities.js";
 
 class TrainSlide {
     constructor(plot){
+        console.log("Creating train slide...")
         this.plot = plot;
+        this.plot.train_slide = this;
+        this.interval = setInterval(() => this.update(), 10 * 1000);
     }
 
     update(){
-
-    }
+        d3.select('#lineList').html('');
+        const existingLinesData = this.plot.lines;
+        existingLinesData.forEach((lineData) => {
+            const listItem = d3.select('#lineList')
+                .append('div')
+                .attr('class', 'list-item')
+                .style('background-color', d3.color(lineData.dot.color).copy({opacity: 0.5}))
+                .append('span')
+                .append('div')
+                .text(`Segment: \"${lineData.dot.segment}\"`)
+                .append('div')
+                .text(`Code: \"${utilities.findCodePath(lineData.dot.plot.tree, lineData.dot.code)}\"`)
+                .append('div')
+                .append('button')
+                .text('Delete')
+                .on('click', () => {
+                    lineData.remove();
+                    this.update();
+                });
+        });
+}
 }
 
 class ConfigSlide {
@@ -31,6 +53,7 @@ class Dot {
         this.circle = null;  // for the circle representation
         this.plot = plot;
         this.color = plot.color_mapper(this.code);
+        this.plot.data.push(this)
     }
 
     draw(plotter) {
@@ -117,8 +140,13 @@ class Line {
     }
     remove()
     {
+        console.log("remove line...")
         if (this.dot.line == this){
             this.dot.line = null;
+        }
+        if (this.dot.plot.lines.includes(this))
+        {
+            this.dot.plot.lines = utilities.arrayRemove(this.dot.plot.lines, this);
         }
         if (this.element) {
             this.element.remove();
@@ -126,24 +154,27 @@ class Line {
 
     }
         draw(plotter) {
-        console.log(this)
+        const creationZoomScale = d3.zoomTransform(this.dot.plot.svg.node()).k;
         this.element = plotter.container.append('line')
             .attr('x1', this.start.x)
             .attr('y1', this.start.y)
             .attr('x2', this.end_x)
             .attr('y2', this.end_y)
             .attr('stroke', this.dot.color) // or whatever style you want
-            .attr('stroke-width', 2)///this.dot.plot.svg._groups[0][0].__zoom.k)
+            .attr('stroke-width', 2/creationZoomScale)
         .attr("marker-end", "url(#arrowhead)");
 
         this.hitbox = plotter.container.append('circle')
             .attr('cx', this.end_x)
             .attr('cy', this.end_y)
-            .attr('r', 5)  // Adjust the radius for your preference
+            .attr('r', 5/creationZoomScale)  // Adjust the radius for your preference
             .style('fill', 'transparent')
             .style('cursor', 'pointer');
 
         this.enableDrag(plotter);
+        if (this.dot.plot.train_slide) {
+            this.dot.plot.train_slide.update();
+        }
     }
 
         updateEnd(x, y) {
@@ -194,11 +225,15 @@ class DotPlotter {
                                         .style("stroke", "none");
 
         this.zoom = d3.zoom()
-            .scaleExtent([0.1, 50])  // Adjust as per your requirements
+            .scaleExtent([0.01, 100])  // Adjust as per your requirements
             .on('zoom', (event) => {
                 this.container.attr('transform', event.transform);
                 const scale = event.transform.k;
                 const dots = this.container.selectAll('.dot');
+                const lines = this.container.selectAll('line');
+                const hitbox = this.container.selectAll('circle')
+                lines.attr('stroke-width', 2 / scale);
+                hitbox.attr('r', 5/scale)
                 if (scale > 1) {
                     dots.attr('r', 5 / scale);  // If original radius is 5
                 } else {
@@ -209,6 +244,38 @@ class DotPlotter {
         this.svg.call(this.zoom);
 
         this.update();
+    }
+    homeView()
+    {
+    console.log("home view...");
+    const xExtent = d3.extent(this.data, d => d.x);
+    const yExtent = d3.extent(this.data, d => d.y);
+
+
+    // Calculate width and height of the bounding box
+    const dataWidth = xExtent[1] - xExtent[0];
+    const dataHeight = yExtent[1] - yExtent[0];
+
+
+    // Calculate the viewport's width and height
+    const width = +this.svg.attr("width");
+    const height = +this.svg.attr("height");
+
+
+    // Calculate the scaling factor
+    const kx = width / dataWidth;
+    const ky = height / dataHeight;
+    const k = 0.95 * Math.min(kx, ky); // 0.95 is for a little padding
+
+
+    // Calculate the translation to center the bounding box in the viewport
+    const tx = (width - k * (xExtent[1] + xExtent[0])) / 2;
+    const ty = (height - k * (yExtent[1] + yExtent[0])) / 2;
+
+    // Apply the zoom transform
+    this.svg.transition()
+        .call(this.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+
     }
 
     fetchData() {
@@ -246,6 +313,7 @@ class DotPlotter {
     update() {
         this.fetchData().then(data => {
             this.render();
+            this.homeView();
         });
     }
 
@@ -258,4 +326,5 @@ class DotPlotter {
 // Usage
 const plot = new DotPlotter('container', 1, "http://localhost:8000/");
 plot.update();
+const train = new TrainSlide(plot);
 
