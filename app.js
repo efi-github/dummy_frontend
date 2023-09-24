@@ -84,33 +84,7 @@ function assignColors(codes, hueOffset=0, saturation=100, value=100, depth=0, hu
     }
   }
 }
-/*
-function assignColors(codes, hueOffset=0, saturation=100, value=100, depth=0, hueStep=30) {
-  let hue = hueOffset;
 
-  if (depth === 0) {
-    hueStep = 360 / Object.keys(codes).length;
-  }
-  for (const id in codes) {
-    const category = codes[id];
-
-    // Set the hue, making sure it's cycled within the 0-359 range
-    const newHue = hue % 360;
-    const color = hsvToRgb(hue/380, saturation/100, value/100);
-
-    category.color = color;
-    idToColorMap[id] = color;
-
-    if (Object.keys(category.subcategories).length > 0) {
-      // Increment hue for the next level, but reduce the step to keep colors close
-      assignColors(category.subcategories, hue + hueStep, saturation - 5, value - 5, depth + 1, hueStep * 0.8);
-    }
-
-    // Increment hue for the next sibling
-    hue += hueStep;
-  }
-}
-*/
   function newColorScale(code_id) {
     return idToColorMap[code_id] || "#808080"; // Fallback to gray
   }
@@ -128,8 +102,6 @@ Promise.all([
   .then(([jsonData, codeTreeData]) => {
     data = jsonData.data;
 
-    // Now you can use this 'data' variable for any further operations
-    console.log('Data loaded:', data);
     assignColors(codeTreeData.codes);
     colorScale = newColorScale;
 
@@ -151,14 +123,11 @@ Promise.all([
     return d.y;
   })
         .attr('fill', d => {
-            console.log(colorScale(d.code))
             return colorScale(d.code);
         })
       .attr('r', 10)
       .on('mouseover', function(event, d) {
-          console.log(colorscale)
     const circleColor = colorScale(d.code);
-    console.log(circleColor)
     // Create a "weaker" version of the circle color, e.g., by adding opacity
     const weakColor = d3.color(circleColor).copy({opacity: 0.5});
     const path = findCodePath(codeTreeData.codes, d.code);
@@ -200,10 +169,7 @@ const updateLineList = () => {
     const listItem = d3.select('#lineList')
       .append('div')
       .attr('class', 'list-item');
-      // Get the original circle color
-      console.log(colorScale)
   const circleColor = colorScale(lineData.data.code);
-      console.log(circleColor)
 
   // Create a "weaker" version of the circle color by adding opacity
   const weakColor = d3.color(circleColor).copy({opacity: 0.5});
@@ -276,7 +242,7 @@ const drag = d3.drag()
       d.hitBox.remove();
       linesData = linesData.filter(ld => ld.id !== d.id);
     }
-    const lineId = Date.now();
+    //const lineId = Date.now();
     const lineData = { x1: d.x, y1: d.y, x2: event.x, y2: event.y, data: d};
     const newLine = container.append('line')
       .datum(lineData)
@@ -299,12 +265,12 @@ const drag = d3.drag()
     // Attach line reference to the hitBox data
     lineData.line = newLine;
     lineData.hitBox = newHitBox;
-    lineData.id = lineId;
+    lineData.id = d.id;
     lineData.data = d;
 
     d.line = newLine;
     d.hitBox = newHitBox;
-    d.id = lineId;
+    //d.id = lineId;
     linesData.push(lineData);  // Add the new lineData object to the array
     updateLineList();  // Update the line list
   })
@@ -324,14 +290,7 @@ const drag = d3.drag()
     updateLineList();  // Update the line list
   });
 
-/*
-// Zoom behavior
-const zoom = d3.zoom()
-  .scaleExtent([0.1, 5])
-  .on('zoom', (event) => {
-    container.attr('transform', event.transform);
-    console.log(event);
-  }); */
+
 const zoom = d3.zoom()
   .scaleExtent([0.1, 50])
   .on('zoom', (event) => {
@@ -364,7 +323,24 @@ function logLinesData() {
   console.log(lines);
 }
 
+function train_points_backend()
+{
+    result = []
+    const lines = d3.selectAll('line').data();
+    for (let i=0; i<lines.length; i++)
+    {
+        const current_line = lines[i]
+        result.push({id: current_line.data.id, pos: [current_line.x2, current_line.y2]})
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "http://127.0.0.1:8000/projects/1/dynamic/correction?epochs=50");
+    xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+
+    // Convert the result array to JSON and send it
+    console.log(JSON.stringify(result))
+    xhr.send(JSON.stringify(result));
+}
 // Add button
 d3.select('body').append('button')
   .text('Log Line Data')
-  .on('click', logLinesData);
+  .on('click', train_points_backend);
