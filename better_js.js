@@ -72,6 +72,15 @@ class Dot {
         this.setDragBehavior(plotter);
     }
 
+    move() {
+        if (this.circle) {
+            this.circle.transition()
+                .duration(1000)
+                .attr("cx", this.x)
+                .attr("cy", this.y);
+        }
+    }
+
     showTooltip(svg) {
     const absolutePosition = this.circle.node().getBoundingClientRect();
 
@@ -313,17 +322,48 @@ class DotPlotter {
                 throw error;
             });
     }
-
+/*
     update() {
         this.fetchData().then(data => {
             this.render();
             this.homeView();
         });
     }
-
+*/
     render() {
         this.data.forEach(dot => {
             dot.draw(this);
+        });
+    }
+
+    update() {
+        this.fetchData().then(newData => {
+            let existingIds = this.data.map(d => d.dotId);
+            newData.forEach(dotData => {
+                let existingDot = this.data.find(d => d.dotId === dotData.id);
+                if (existingDot) {
+                    // Update existing dot
+                    existingDot.x = dotData.reduced_embedding.x;
+                    existingDot.y = dotData.reduced_embedding.y;
+                    existingDot.move();  // Animate transition
+                } else {
+                    // Create new dot
+                    let newDot = new Dot(dotData.id, dotData.reduced_embedding.x, dotData.reduced_embedding.y, dotData.segment, dotData.sentence, dotData.code, this);
+                    this.data.push(newDot);
+                    newDot.draw(this);
+                }
+            });
+
+            // Optional: remove dots that don't exist in newData
+            this.data = this.data.filter(dot => {
+                let shouldKeep = newData.find(d => d.id === dot.dotId);
+                if (!shouldKeep) {
+                    dot.circle.remove();
+                }
+                return shouldKeep;
+            });
+
+            this.homeView();
         });
     }
 }
