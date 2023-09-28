@@ -75,10 +75,11 @@ class Dot {
     move() {
         if (this.circle) {
             this.circle.transition()
-                .duration(1000)
+                .duration(10 *300)
                 .attr("cx", this.x)
                 .attr("cy", this.y);
         }
+
     }
 
     showTooltip(svg) {
@@ -251,8 +252,7 @@ class DotPlotter {
             });
 
         this.svg.call(this.zoom);
-
-        this.update();
+        this.interval = setInterval(() => this.update(), 10 * 300);
     }
     homeView()
     {
@@ -290,7 +290,7 @@ class DotPlotter {
     train_clusters(){
 
     }
-
+/*
     fetchData() {
         console.log("fetching data...")
         const endpoint = this.source + "projects/" + this.projectId + "/plots/?all=true"
@@ -305,6 +305,20 @@ class DotPlotter {
                 throw error;
             });
     }
+*/
+    fetchData() {
+    console.log("fetching data...")
+    const endpoint = this.source + "projects/" + this.projectId + "/plots/?all=true"
+    return fetch(endpoint)
+        .then(response => response.json())
+        .then(data => {
+            return data['data'];
+        })
+        .catch(error => {
+            console.error('Error fetching plot data:', error);
+            throw error;
+        });
+}
 
     generateColors(){
         console.log("generating colors...")
@@ -330,6 +344,7 @@ class DotPlotter {
         });
     }
 */
+    /*
     render() {
         this.data.forEach(dot => {
             dot.draw(this);
@@ -362,13 +377,43 @@ class DotPlotter {
                 }
                 return shouldKeep;
             });
+        });
+    }*/
+    update() {
+        return this.fetchData().then(newData => {
+            this.render(newData);
+        });
+    }
 
-            this.homeView();
+    render(newData) {
+        // Existing Dots
+        newData.forEach(dotData => {
+            let existingDot = this.data.find(d => d.dotId === dotData.id);
+            if (existingDot) {
+                // Update existing dot
+                existingDot.x = dotData.reduced_embedding.x;
+                existingDot.y = dotData.reduced_embedding.y;
+                existingDot.move();  // Animate transition
+            } else {
+                // Create new dot
+                let newDot = new Dot(dotData.id, dotData.reduced_embedding.x, dotData.reduced_embedding.y, dotData.segment, dotData.sentence, dotData.code, this);
+                this.data.push(newDot);
+                newDot.draw(this);
+            }
+        });
+
+        // Optional: remove dots that don't exist in newData
+        this.data = this.data.filter(dot => {
+            let shouldKeep = newData.find(d => d.id === dot.dotId);
+            if (!shouldKeep && dot.circle) {
+                dot.circle.remove();
+            }
+            return shouldKeep;
         });
     }
 }
 // Usage
 const plot = new DotPlotter('container', 1, "http://localhost:8000/");
-plot.update();
+plot.update().then(() => plot.homeView());
 const train = new TrainSlide(plot);
 
