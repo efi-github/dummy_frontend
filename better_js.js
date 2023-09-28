@@ -278,6 +278,10 @@ class DotPlotter {
 
     }
 
+    train_clusters(){
+
+    }
+
     fetchData() {
         console.log("fetching data...")
         const endpoint = this.source + "projects/" + this.projectId + "/plots/?all=true"
