@@ -38,20 +38,41 @@
 .list-item {
   margin-bottom: 10px;
 }
+#linesContainer {
+    position: relative;
+}
+
+#lineList {
+    max-height: 400px; /* Adjust the height as needed */
+    overflow-y: scroll;
+}
+
+#trainLinesButton {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
 
   </style>
 </head>
 <body>
 <div id="main-container">
     <!-- Your existing SVG element for D3 -->
-  <svg id="canvas" width="400" height="400">
-    <g id="container">
-      <!-- Your SVG content will be appended here -->
-    </g>
-  </svg>
+  <div id="plot-container">
+    <svg id="canvas" width="400" height="400">
+      <g id="container">
+        <!-- Your SVG content will be appended here -->
+      </g>
+    </svg>
+    <button id="plotTrainButton">Train Plot</button>
+  </div>
 
     <!-- Div for the list -->
+  <div id="linesContainer">
     <div id="lineList"></div>
+    <button id="trainLinesButton">Train Lines</button>
+</div>
 </div>
 <script type="module" src="utilities.js"></script>
 <script type="module" src="better_js.js"></script>

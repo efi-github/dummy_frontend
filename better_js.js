@@ -8,8 +8,41 @@ class TrainSlide {
         console.log("Creating train slide...")
         this.plot = plot;
         this.plot.train_slide = this;
-        this.interval = setInterval(() => this.update(), 10 * 1000);
+        //this.interval = setInterval(() => this.update(), 10 * 1000);
+        this.setupTrainLinesButton();
     }
+    setupTrainLinesButton() {
+        const button = document.getElementById('trainLinesButton');
+        button.addEventListener('click', () => this.trainLines());
+    }
+
+    trainLines() {
+    // Transform lines data into the desired format
+    const formattedData = this.plot.lines.map(line => {
+        return {
+            id: line.dot.dotId,
+            pos: [line.end_x, line.end_y]
+        };
+    });
+
+    const jsonData = JSON.stringify(formattedData); // Convert the formatted data to JSON
+    console.log(jsonData);
+    fetch(this.plot.source + "projects/" + this.plot.projectId + "/dynamic/correction?epochs=10", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'  // Specify that we're sending JSON data
+        },
+        body: jsonData  // Attach the JSON data to the request body
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        this.plot.update();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
 
     update(){
         d3.select('#lineList').html('');
@@ -267,16 +300,21 @@ class DotPlotter {
         this.svg.call(this.zoom);
         this.update().then(() => {
                 this.homeView();
-                this.interval = setInterval(() => this.update(), 10 * 300);
+                //this.interval = setInterval(() => this.update(), 10 * 300);
             }
         );
+        this.setupTrainButton();
+
+    }
+    setupTrainButton() {
+        document.getElementById("plotTrainButton")
+            .addEventListener("click", () => this.trainForEpochs(10));
 
     }
     setFilter(filterFunc) {
         this.filter = filterFunc;
         this.update();
     }
-
     homeView()
     {
     console.log("home view...");
@@ -361,6 +399,16 @@ class DotPlotter {
         this.setFilter(filterFunc);
         this.update().then(() => this.homeView());
     }
+    trainForEpochs(epochs) {
+    fetch(this.source + "projects/" + this.projectId + "/dynamic/cluster?epochs=" + epochs, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        this.update();
+    });
+}
     render(newData) {
         // Existing Dots
         newData = this.filter ? newData.filter(this.filter) : newData;
@@ -391,6 +439,5 @@ class DotPlotter {
 }
 // Usage
 const plot = new DotPlotter('container', 1, "http://localhost:8000/");
-
 const train = new TrainSlide(plot);
 //plot.applyCodeFilter([2, 19])
