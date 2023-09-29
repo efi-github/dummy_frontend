@@ -94,7 +94,7 @@ class Dot {
                          .attr('class', 'dot')
                          .attr('cx', this.x)
                          .attr('cy', this.y)
-                         .attr('r', 2)
+                         .attr('r', this.plot.point_r)
                          .attr('fill', this.color)  // Add fill color
                          .on('mouseover', (event) => {
                              this.showTooltip(plotter.svg);
@@ -217,13 +217,13 @@ class Line {
             .attr('x2', this.end_x)
             .attr('y2', this.end_y)
             .attr('stroke', this.dot.color) // or whatever style you want
-            .attr('stroke-width', 2/creationZoomScale)
+            .attr('stroke-width', this.dot.plot.point_r/creationZoomScale)
         .attr("marker-end", "url(#arrowhead)");
 
         this.hitbox = plotter.container.append('circle')
             .attr('cx', this.end_x)
             .attr('cy', this.end_y)
-            .attr('r', 2/creationZoomScale)  // Adjust the radius for your preference
+            .attr('r', this.dot.plot.point_r/creationZoomScale)  // Adjust the radius for your preference
             .style('fill', 'transparent')
             .style('cursor', 'pointer');
 
@@ -265,7 +265,7 @@ class DotPlotter {
         this.generateColors();
         this.svg = d3.select('#canvas');
         this.container = d3.select('#container');
-        this.point_r = 2;
+        this.point_r = 2.5;
 
         this.svg.append("defs").append("marker")
                                         .attr("id", "arrowhead")
@@ -289,12 +289,12 @@ class DotPlotter {
                 const dots = this.container.selectAll('.dot');
                 const lines = this.container.selectAll('line');
                 const hitbox = this.container.selectAll('circle')
-                lines.attr('stroke-width', 2 / scale);
-                hitbox.attr('r', 2/scale)
-                if (scale > 2) {
-                    dots.attr('r', 2 / scale);  // If original radius is 2
+                lines.attr('stroke-width', this.point_r / scale);
+                hitbox.attr('r', this.point_r/scale)
+                if (scale > 1.5) {
+                    dots.attr('r', this.point_r / scale);  // If original radius is this.point_r
                 } else {
-                    dots.attr('r', 2);
+                    dots.attr('r', this.point_r);
                 }
             });
 
