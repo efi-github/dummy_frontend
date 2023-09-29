@@ -94,7 +94,7 @@ class Dot {
                          .attr('class', 'dot')
                          .attr('cx', this.x)
                          .attr('cy', this.y)
-                         .attr('r', 5)
+                         .attr('r', 2)
                          .attr('fill', this.color)  // Add fill color
                          .on('mouseover', (event) => {
                              this.showTooltip(plotter.svg);
@@ -223,7 +223,7 @@ class Line {
         this.hitbox = plotter.container.append('circle')
             .attr('cx', this.end_x)
             .attr('cy', this.end_y)
-            .attr('r', 5/creationZoomScale)  // Adjust the radius for your preference
+            .attr('r', 2/creationZoomScale)  // Adjust the radius for your preference
             .style('fill', 'transparent')
             .style('cursor', 'pointer');
 
@@ -265,6 +265,7 @@ class DotPlotter {
         this.generateColors();
         this.svg = d3.select('#canvas');
         this.container = d3.select('#container');
+        this.point_r = 2;
 
         this.svg.append("defs").append("marker")
                                         .attr("id", "arrowhead")
@@ -281,7 +282,7 @@ class DotPlotter {
                                         .style("stroke", "none");
 
         this.zoom = d3.zoom()
-            .scaleExtent([0.01, 100])  // Adjust as per your requirements
+            .scaleExtent([0.01, 1000])  // Adjust as per your requirements
             .on('zoom', (event) => {
                 this.container.attr('transform', event.transform);
                 const scale = event.transform.k;
@@ -289,11 +290,11 @@ class DotPlotter {
                 const lines = this.container.selectAll('line');
                 const hitbox = this.container.selectAll('circle')
                 lines.attr('stroke-width', 2 / scale);
-                hitbox.attr('r', 5/scale)
-                if (scale > 1) {
-                    dots.attr('r', 5 / scale);  // If original radius is 5
+                hitbox.attr('r', 2/scale)
+                if (scale > 2) {
+                    dots.attr('r', 2 / scale);  // If original radius is 2
                 } else {
-                    dots.attr('r', 5);
+                    dots.attr('r', 2);
                 }
             });
 
@@ -306,11 +307,33 @@ class DotPlotter {
         this.setupTrainButton();
 
     }
+    /*
     setupTrainButton() {
         document.getElementById("plotTrainButton")
             .addEventListener("click", () => this.trainForEpochs(10));
 
+    }*/
+    setupTrainButton() {
+    const trainButton = document.getElementById("plotTrainButton");
+    trainButton.addEventListener("click", () => {
+        if (trainButton.textContent === "Train") {
+            this.toggleTrainButtonState();
+            this.trainForEpochs(10);
+        } else {
+            this.stopTraining = true;
+        }
+    });
+}
+toggleTrainButtonState() {
+    const trainButton = document.getElementById("plotTrainButton");
+    if (trainButton.textContent === "Train") {
+        trainButton.textContent = "Stop";
+        this.stopTraining = false;
+    } else {
+        trainButton.textContent = "Train";
+        this.stopTraining = true;
     }
+}
     setFilter(filterFunc) {
         this.filter = filterFunc;
         this.update();
@@ -399,6 +422,7 @@ class DotPlotter {
         this.setFilter(filterFunc);
         this.update().then(() => this.homeView());
     }
+    /*
     trainForEpochs(epochs) {
     fetch(this.source + "projects/" + this.projectId + "/dynamic/cluster?epochs=" + epochs, {
         method: 'POST'
@@ -407,6 +431,25 @@ class DotPlotter {
     .then(data => {
         console.log(data);
         this.update();
+    });
+}*/
+    trainForEpochs(epochsRemaining) {
+    if (this.stopTraining || epochsRemaining <= 0) {
+        this.toggleTrainButtonState();
+        return;
+    }
+
+    fetch(this.source + "projects/" + this.projectId + "/dynamic/cluster?epochs=3", {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        this.update().then(() => this.trainForEpochs(epochsRemaining - 1));
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        this.toggleTrainButtonState(); // Ensure the button state is reset if there's an error
     });
 }
     render(newData) {
