@@ -79,6 +79,9 @@ class Dot {
                 .attr("cx", this.x)
                 .attr("cy", this.y);
         }
+        if (this.line) {
+        this.line.updateStart(this.x, this.y);
+    }
 
     }
 
@@ -148,6 +151,16 @@ class Line {
     dot.line = this;
     dot.plot.lines.push(this);
     }
+    updateStart(x, y) {
+    this.start.x = x;
+    this.start.y = y;
+    if (this.element) {
+        this.element.transition()
+            .duration(10 * 300) // Match the dot's transition duration
+            .attr('x1', x)
+            .attr('y1', y);
+    }
+}
     remove()
     {
         console.log("remove line...")
@@ -252,8 +265,18 @@ class DotPlotter {
             });
 
         this.svg.call(this.zoom);
-        this.interval = setInterval(() => this.update(), 10 * 300);
+        this.update().then(() => {
+                this.homeView();
+                this.interval = setInterval(() => this.update(), 10 * 300);
+            }
+        );
+
     }
+    setFilter(filterFunc) {
+        this.filter = filterFunc;
+        this.update();
+    }
+
     homeView()
     {
     console.log("home view...");
@@ -290,22 +313,7 @@ class DotPlotter {
     train_clusters(){
 
     }
-/*
-    fetchData() {
-        console.log("fetching data...")
-        const endpoint = this.source + "projects/" + this.projectId + "/plots/?all=true"
-        return fetch(endpoint)
-            .then(response => response.json())
-            .then(data => {
-                this.data = data['data'].map(item => new Dot(item.id, item.reduced_embedding.x, item.reduced_embedding.y, item.segment, item.sentence, item.code, this));
-                return this.data;
-            })
-            .catch(error => {
-                console.error('Error fetching plot data:', error);
-                throw error;
-            });
-    }
-*/
+
     fetchData() {
     console.log("fetching data...")
     const endpoint = this.source + "projects/" + this.projectId + "/plots/?all=true"
@@ -336,57 +344,26 @@ class DotPlotter {
                 throw error;
             });
     }
-/*
-    update() {
-        this.fetchData().then(data => {
-            this.render();
-            this.homeView();
-        });
-    }
-*/
-    /*
-    render() {
-        this.data.forEach(dot => {
-            dot.draw(this);
-        });
-    }
 
-    update() {
-        this.fetchData().then(newData => {
-            let existingIds = this.data.map(d => d.dotId);
-            newData.forEach(dotData => {
-                let existingDot = this.data.find(d => d.dotId === dotData.id);
-                if (existingDot) {
-                    // Update existing dot
-                    existingDot.x = dotData.reduced_embedding.x;
-                    existingDot.y = dotData.reduced_embedding.y;
-                    existingDot.move();  // Animate transition
-                } else {
-                    // Create new dot
-                    let newDot = new Dot(dotData.id, dotData.reduced_embedding.x, dotData.reduced_embedding.y, dotData.segment, dotData.sentence, dotData.code, this);
-                    this.data.push(newDot);
-                    newDot.draw(this);
-                }
-            });
-
-            // Optional: remove dots that don't exist in newData
-            this.data = this.data.filter(dot => {
-                let shouldKeep = newData.find(d => d.id === dot.dotId);
-                if (!shouldKeep) {
-                    dot.circle.remove();
-                }
-                return shouldKeep;
-            });
-        });
-    }*/
     update() {
         return this.fetchData().then(newData => {
             this.render(newData);
         });
     }
 
+    applyCodeFilter(codes) {
+        function createCodeFilter(codes) {
+        return function(dot) {
+            return codes.includes(dot.code);
+        };
+    }
+        const filterFunc = createCodeFilter(codes);
+        this.setFilter(filterFunc);
+        this.update().then(() => this.homeView());
+    }
     render(newData) {
         // Existing Dots
+        newData = this.filter ? newData.filter(this.filter) : newData;
         newData.forEach(dotData => {
             let existingDot = this.data.find(d => d.dotId === dotData.id);
             if (existingDot) {
@@ -414,6 +391,6 @@ class DotPlotter {
 }
 // Usage
 const plot = new DotPlotter('container', 1, "http://localhost:8000/");
-plot.update().then(() => plot.homeView());
-const train = new TrainSlide(plot);
 
+const train = new TrainSlide(plot);
+//plot.applyCodeFilter([2, 19])
