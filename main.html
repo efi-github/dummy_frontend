@@ -5,11 +5,19 @@
   <title>D3 Drag and Zoom Example</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
+    .tooltip {
+    font-size: 12px;
+    pointer-events: none; /* Ensure it doesn't interfere with other mouse events */
+    opacity: 0.9;
+    border-radius: 4px;
+}
+
     /* Add your CSS here */
     #main-container {
   display: flex;
   flex-direction: row;
 }
+
 #canvas {
   flex: 1;
 }
@@ -30,21 +38,45 @@
 .list-item {
   margin-bottom: 10px;
 }
+#linesContainer {
+    position: relative;
+}
+
+#lineList {
+    max-height: 400px; /* Adjust the height as needed */
+    overflow-y: scroll;
+}
+
+#trainLinesButton {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
 
   </style>
 </head>
 <body>
 <div id="main-container">
     <!-- Your existing SVG element for D3 -->
-  <svg id="canvas" width="400" height="800">
-    <g id="container">
-      <!-- Your SVG content will be appended here -->
-    </g>
-  </svg>
+  <div id="plot-container">
+    <svg id="canvas" width="400" height="400">
+      <g id="container">
+        <!-- Your SVG content will be appended here -->
+      </g>
+    </svg>
+    <button id="plotTrainButton">Train</button>
+  </div>
 
     <!-- Div for the list -->
+  <div id="linesContainer">
     <div id="lineList"></div>
+    <button id="trainLinesButton">Train Lines</button>
 </div>
-<script src = app.js ></script>
+</div>
+<script type="module" src="utilities.js"></script>
+<script type="module" src="app.js"></script>
+
+<!-- <script src = app.js ></script> -->
 </body>
 </html>
